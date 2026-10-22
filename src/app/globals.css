@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #000000;
+  --foreground: #ededed;
+  --neon: #00ff9d;
+  --neon-dim: #00e68a;
+  --surface: #0a0a0c;
+  --elevated: #121215;
+  --border: #1f1f24;
+  --muted: #8b8b9a;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  color: var(--foreground);
+  background: #000000;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: rgba(0, 255, 157, 0.3);
+  color: #fff;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #0a0a0c;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a2a32;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3a3a45;
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-neon px-6 py-3 text-sm font-bold text-black transition-all duration-200 hover:bg-neon-dim hover:shadow-[0_0_24px_rgba(0,255,157,0.35)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon focus-visible:ring-offset-2 focus-visible:ring-offset-black active:scale-[0.98];
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition-all duration-200 hover:border-neon/40 hover:bg-neon/10 hover:text-neon focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neon/50 focus-visible:ring-offset-2 focus-visible:ring-offset-black active:scale-[0.98];
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white/60 transition-colors hover:bg-white/5 hover:text-white;
+  }
+
+  .card {
+    @apply rounded-2xl border border-white/8 bg-white/[0.03] backdrop-blur-sm transition-all duration-300;
+  }
+
+  .card-hover {
+    @apply card hover:border-neon/25 hover:bg-white/[0.05] hover:shadow-[0_8px_32px_rgba(0,0,0,0.4),0_0_20px_rgba(0,255,157,0.06)];
+  }
+
+  .section-heading {
+    @apply text-2xl font-bold tracking-tight text-white sm:text-3xl;
+  }
+
+  .section-sub {
+    @apply mt-2 max-w-2xl text-base text-white/50;
+  }
+
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+
+  .badge-neon {
+    @apply badge bg-neon/15 text-neon;
+  }
+
+  .badge-muted {
+    @apply badge bg-white/8 text-white/50;
+  }
+
+  .input-field {
+    @apply w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-sm text-white placeholder:text-white/35 focus:border-neon/40 focus:outline-none focus:ring-1 focus:ring-neon/20;
+  }
+
+  .link-neon {
+    @apply text-neon transition-colors hover:text-neon-dim;
+  }
+}
