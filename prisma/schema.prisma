@@ -1,0 +1,346 @@
+// Fomo Whales -- Prisma Schema
+// Phase 2: Full normalized database design
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  telegramId    String   @unique @map("telegram_id")
+  telegramUsername String? @map("telegram_username")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  suspendedAt   DateTime? @map("suspended_at")
+  suspendReason String?  @map("suspend_reason")
+
+  profile       UserProfile?
+  calls         Call[]
+  promotions    Promotion[]
+  paymentOrders PaymentOrder[]
+  moderationActions ModerationAction[] @relation("ModeratedUser")
+
+  @@index([telegramId])
+  @@map("users")
+}
+
+model UserProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique @map("user_id")
+  displayName String   @map("display_name")
+  username    String   @unique
+  bio         String?
+  avatarUrl   String?  @map("avatar_url")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([username])
+  @@map("user_profiles")
+}
+
+model Channel {
+  id              String   @id @default(cuid())
+  name            String
+  telegramChatId  String   @unique @map("telegram_chat_id")
+  publicUsername  String?  @map("public_username")
+  inviteUrl       String?  @map("invite_url")
+  description     String?
+  logoUrl         String?  @map("logo_url")
+  audienceSize    Int?     @map("audience_size")
+  audienceSource  String?  @map("audience_source")
+  engagementRate  Float?   @map("engagement_rate")
+  metricsDate     DateTime? @map("metrics_date")
+  enabled         Boolean  @default(false)
+  featured        Boolean  @default(false)
+  sortOrder       Int      @default(0) @map("sort_order")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  packages    ChannelPackage[]
+  promotions  Promotion[]
+  publications TelegramPublication[]
+
+  @@index([enabled, featured])
+  @@map("channels")
+}
+
+model ChannelPackage {
+  id          String   @id @default(cuid())
+  channelId   String   @map("channel_id")
+  name        String
+  description String?
+  priceCents  Int      @map("price_cents")
+  currency    String   @default("USD")
+  durationHours Int?   @map("duration_hours")
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  channel       Channel        @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  paymentOrders PaymentOrder[]
+
+  @@index([channelId, enabled])
+  @@map("channel_packages")
+}
+
+enum CallStatus {
+  PENDING
+  TRACKING
+  MILESTONE_REACHED
+  PUBLISHED
+  REJECTED
+  EXPIRED
+}
+
+model Call {
+  id                String     @id @default(cuid())
+  userId            String     @map("user_id")
+  chain             String
+  tokenAddress      String?    @map("token_address")
+  tokenName         String?    @map("token_name")
+  tokenTicker       String?    @map("token_ticker")
+  tokenLogoUrl      String?    @map("token_logo_url")
+  referencePrice    Decimal    @map("reference_price") @db.Decimal(36, 18)
+  referenceTimestamp DateTime  @map("reference_timestamp")
+  priceSource       String     @map("price_source")
+  liquidityUsd      Decimal?   @map("liquidity_usd") @db.Decimal(24, 2)
+  currentPrice      Decimal?   @map("current_price") @db.Decimal(36, 18)
+  highestPrice      Decimal?   @map("highest_price") @db.Decimal(36, 18)
+  promoText         String?    @map("promo_text") @db.Text
+  status            CallStatus @default(PENDING)
+  milestoneAt       DateTime?  @map("milestone_at")
+  publishedAt       DateTime?  @map("published_at")
+  createdAt         DateTime   @default(now()) @map("created_at")
+  updatedAt         DateTime   @updatedAt @map("updated_at")
+
+  user         User                  @relation(fields: [userId], references: [id])
+  snapshots    CallPriceSnapshot[]
+  milestones   CallMilestone[]
+  publications TelegramPublication[]
+
+  @@index([status, createdAt])
+  @@index([chain, tokenAddress])
+  @@index([userId])
+  @@map("calls")
+}
+
+model CallPriceSnapshot {
+  id        String   @id @default(cuid())
+  callId    String   @map("call_id")
+  price     Decimal  @db.Decimal(36, 18)
+  source    String
+  liquidityUsd Decimal? @map("liquidity_usd") @db.Decimal(24, 2)
+  recordedAt DateTime @default(now()) @map("recorded_at")
+
+  call Call @relation(fields: [callId], references: [id], onDelete: Cascade)
+
+  @@index([callId, recordedAt])
+  @@map("call_price_snapshots")
+}
+
+model CallMilestone {
+  id              String   @id @default(cuid())
+  callId          String   @map("call_id")
+  multiplier      Decimal  @db.Decimal(10, 4)
+  priceAtMilestone Decimal @map("price_at_milestone") @db.Decimal(36, 18)
+  referencePrice  Decimal  @map("reference_price") @db.Decimal(36, 18)
+  evidence        Json?
+  verifiedAt      DateTime @default(now()) @map("verified_at")
+  published       Boolean  @default(false)
+
+  call Call @relation(fields: [callId], references: [id], onDelete: Cascade)
+
+  @@unique([callId, multiplier])
+  @@map("call_milestones")
+}
+
+enum PromotionType {
+  FREE_MILESTONE
+  PAID_PRO
+}
+
+enum PromotionStatus {
+  DRAFT
+  PENDING_PAYMENT
+  PAID
+  PUBLISHING
+  PUBLISHED
+  FAILED
+  CANCELLED
+}
+
+model Promotion {
+  id            String          @id @default(cuid())
+  userId        String          @map("user_id")
+  channelId     String?         @map("channel_id")
+  type          PromotionType
+  status        PromotionStatus @default(DRAFT)
+  tokenName     String?         @map("token_name")
+  tokenTicker   String?         @map("token_ticker")
+  tokenLogoUrl  String?         @map("token_logo_url")
+  chain         String?
+  contractAddress String?       @map("contract_address")
+  promoText     String?         @map("promo_text") @db.Text
+  callId        String?         @map("call_id")
+  publishedAt   DateTime?       @map("published_at")
+  telegramPostUrl String?       @map("telegram_post_url")
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+
+  user         User                  @relation(fields: [userId], references: [id])
+  channel      Channel?              @relation(fields: [channelId], references: [id])
+  paymentOrder PaymentOrder?
+  publications TelegramPublication[]
+
+  @@index([status, createdAt])
+  @@index([userId])
+  @@index([type])
+  @@map("promotions")
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  EXPIRED
+  REFUNDED
+  CANCELLED
+}
+
+model PaymentOrder {
+  id              String        @id @default(cuid())
+  userId          String        @map("user_id")
+  packageId       String?       @map("package_id")
+  promotionId     String?       @unique @map("promotion_id")
+  orderRef        String        @unique @map("order_ref")
+  amountCents     Int           @map("amount_cents")
+  currency        String        @default("USD")
+  status          PaymentStatus @default(PENDING)
+  provider        String?
+  providerRef     String?       @map("provider_ref")
+  checkoutUrl     String?       @map("checkout_url")
+  expiresAt       DateTime?     @map("expires_at")
+  completedAt     DateTime?     @map("completed_at")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  user      User           @relation(fields: [userId], references: [id])
+  package   ChannelPackage? @relation(fields: [packageId], references: [id])
+  promotion Promotion?     @relation(fields: [promotionId], references: [id])
+  events    PaymentEvent[]
+
+  @@index([orderRef])
+  @@index([status, createdAt])
+  @@index([userId])
+  @@map("payment_orders")
+}
+
+model PaymentEvent {
+  id            String   @id @default(cuid())
+  paymentOrderId String  @map("payment_order_id")
+  eventType     String   @map("event_type")
+  providerEventId String? @unique @map("provider_event_id")
+  payload       Json?
+  processedAt   DateTime @default(now()) @map("processed_at")
+
+  paymentOrder PaymentOrder @relation(fields: [paymentOrderId], references: [id], onDelete: Cascade)
+
+  @@index([paymentOrderId])
+  @@map("payment_events")
+}
+
+enum PublicationStatus {
+  QUEUED
+  PUBLISHING
+  PUBLISHED
+  FAILED
+  CANCELLED
+}
+
+model TelegramPublication {
+  id              String            @id @default(cuid())
+  channelId       String?           @map("channel_id")
+  callId          String?           @map("call_id")
+  promotionId     String?           @map("promotion_id")
+  status          PublicationStatus @default(QUEUED)
+  messageText     String            @map("message_text") @db.Text
+  telegramMessageId String?         @map("telegram_message_id")
+  telegramPostUrl String?           @map("telegram_post_url")
+  attempts        Int               @default(0)
+  lastError       String?           @map("last_error")
+  publishedAt     DateTime?         @map("published_at")
+  idempotencyKey  String            @unique @map("idempotency_key")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  channel   Channel?   @relation(fields: [channelId], references: [id])
+  call      Call?      @relation(fields: [callId], references: [id])
+  promotion Promotion? @relation(fields: [promotionId], references: [id])
+
+  @@index([status])
+  @@index([idempotencyKey])
+  @@map("telegram_publications")
+}
+
+model AdminUser {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  name         String?
+  role         String   @default("admin")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  moderationActions ModerationAction[]
+
+  @@map("admin_users")
+}
+
+model ModerationAction {
+  id          String   @id @default(cuid())
+  adminId     String   @map("admin_id")
+  userId      String?  @map("user_id")
+  action      String
+  reason      String?
+  metadata    Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  admin AdminUser @relation(fields: [adminId], references: [id])
+  user  User?     @relation("ModeratedUser", fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("moderation_actions")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorType  String   @map("actor_type")
+  actorId    String?  @map("actor_id")
+  action     String
+  entityType String?  @map("entity_type")
+  entityId   String?  @map("entity_id")
+  metadata   Json?
+  ip         String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model PlatformSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("platform_settings")
+}
