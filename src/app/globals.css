@@ -60,7 +60,7 @@ body {
   }
 
   .card {
-    @apply rounded-2xl border border-white/8 bg-white/[0.03] backdrop-blur-sm transition-all duration-300;
+    @apply rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-sm transition-all duration-300;
   }
 
   .card-hover {
@@ -84,7 +84,7 @@ body {
   }
 
   .badge-muted {
-    @apply badge bg-white/8 text-white/50;
+    @apply badge bg-white/[0.08] text-white/50;
   }
 
   .input-field {
