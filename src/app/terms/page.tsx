@@ -45,15 +45,14 @@ export default function TermsPage() {
           <h2 className="text-lg font-semibold text-white">4. Free Calls</h2>
           <p className="mt-2">
             Free Calls are published only after verified 2× milestones under our rules. Publication
-            is not guaranteed if price data is unreliable or checks fail. We may reject or delay
-            publication for data quality or abuse reasons.
+            is not guaranteed if price data is unreliable or verification fails.
           </p>
         </section>
 
         <section>
           <h2 className="text-lg font-semibold text-white">5. Pro Calls and Payments</h2>
           <p className="mt-2">
-            Pro Call prices are shown before payment. Payment is confirmed server-side only.
+            Pro Calls require payment for a selected channel package. Payment is confirmed server-side only.
             Successful confirmation triggers automated publication attempts. Refund eligibility
             depends on publication status and provider rules; contact support for disputes.
           </p>
@@ -79,7 +78,7 @@ export default function TermsPage() {
         <section>
           <h2 className="text-lg font-semibold text-white">8. Disclaimers</h2>
           <p className="mt-2">
-            The platform is provided "as is." We do not guarantee uninterrupted service, accurate
+            The platform is provided as-is. We do not guarantee uninterrupted service, accurate
             price data, or successful publication in all cases. Cryptocurrency is highly risky.
             Nothing on the platform constitutes investment, legal, or tax advice.
           </p>
@@ -98,7 +97,7 @@ export default function TermsPage() {
           <h2 className="text-lg font-semibold text-white">10. Changes</h2>
           <p className="mt-2">
             We may update these Terms. Continued use after changes constitutes acceptance. Material
-            changes will be indicated by updating the "Last updated" date.
+            changes will be indicated by updating the Last updated date.
           </p>
         </section>
 

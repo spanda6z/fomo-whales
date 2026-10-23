@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 const TELEGRAM_BOT_URL = "https://t.me/FomoWhalesBot";
 
 export function CallTypes() {
